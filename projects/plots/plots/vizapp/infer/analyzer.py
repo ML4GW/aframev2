@@ -62,6 +62,7 @@ class EventAnalyzer:
         self.fduration = fduration
         self.psd_length = psd_length
         self.kernel_length = kernel_length
+        self.highpass = highpass
         self.inference_sampling_rate = inference_sampling_rate
         self.integration_length = integration_length
         self.batch_size = batch_size
@@ -199,6 +200,15 @@ class EventAnalyzer:
         integrated = self.integrate(nn)
 
         return nn, integrated, whitened
+
+    def get_fft(self, strain: Dict[str, np.ndarray]):
+        data = list(strain.values())
+        ffts = [np.abs(np.fft.rfft(x)) for x in data]
+        freqs = np.fft.rfftfreq(len(data[0]), d=1 / self.sample_rate)
+
+        mask = freqs > self.highpass
+        ffts = {ifo: fft[mask] for ifo, fft in zip(self.ifos, ffts)}
+        return freqs[mask], ffts
 
     def qscan(self, strain: Dict[str, np.ndarray]):
         qscans = []
